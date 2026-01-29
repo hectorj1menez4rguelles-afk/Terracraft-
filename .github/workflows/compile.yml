@@ -1,35 +1,21 @@
-name: PS2 Build System
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build-elf:
-    runs-on: ubuntu-latest
-    # Usamos el contenedor oficial que ya tiene ee-g++ configurado
-    container: ps2dev/ps2dev:latest
-
-    steps:
-      - name: Descargar código del Repo
-        uses: actions/checkout@v4
-
       - name: Configurar Entorno y Compilar
         run: |
-          # Definimos variables de entorno por si el contenedor no las tiene activas
+          # Forzamos las rutas oficiales del contenedor ps2dev
           export PS2DEV=/usr/local/ps2dev
           export PS2SDK=$PS2DEV/ps2sdk
-          export PATH=$PATH:$PS2DEV/bin:$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2SDK/bin
+          export PATH=$PS2DEV/bin:$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2SDK/bin:$PATH
           
-          # Entramos a la carpeta de tu proyecto (si es necesario)
-          # Y ejecutamos el compilador. Aquí un ejemplo manual básico:
-          ee-g++ -o Terracraft.elf main.cpp -L$PS2SDK/ee/lib -lgraph -ldraw -lkernel -I$PS2SDK/ee/include -I$PS2SDK/common/include
-
-      - name: Guardar el Juego (.elf)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Terracraft-PS2-Build
-          path: Terracraft.elf
+          # Verificamos si realmente existe antes de tirar el error
+          if [ -f "$PS2DEV/ee/bin/ee-g++" ]; then
+            echo "🚀 Compilador encontrado, iniciando..."
+            $PS2DEV/ee/bin/ee-g++ -o Terracraft.elf main.cpp \
+              -I$PS2SDK/ee/include \
+              -I$PS2SDK/common/include \
+              -L$PS2SDK/ee/lib \
+              -lgraph -ldraw -lkernel
+          else
+            echo "❌ Error: No se encontró ee-g++ en $PS2DEV/ee/bin/"
+            ls -R $PS2DEV/ee/bin/ # Esto nos dirá qué archivos hay ahí para debuguear
+            exit 1
+          fi
           
