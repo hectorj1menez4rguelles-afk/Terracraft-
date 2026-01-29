@@ -1,27 +1,35 @@
-name: Compilar PS2 ELF
-on: [push]
+name: PS2 Build System
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
+  build-elf:
     runs-on: ubuntu-latest
+    # Usamos el contenedor oficial que ya tiene ee-g++ configurado
     container: ps2dev/ps2dev:latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Compilar
+    steps:
+      - name: Descargar código del Repo
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno y Compilar
         run: |
-          # Esto activa automáticamente todas las herramientas del contenedor
+          # Definimos variables de entorno por si el contenedor no las tiene activas
           export PS2DEV=/usr/local/ps2dev
           export PS2SDK=$PS2DEV/ps2sdk
-          export PATH=$PATH:$PS2DEV/bin:$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2DEV/dvp/bin:$PS2SDK/bin
+          export PATH=$PATH:$PS2DEV/bin:$PS2DEV/ee/bin:$PS2DEV/iop/bin:$PS2SDK/bin
           
-          # Comando de compilación
-          ee-g++ -D_EE -O2 -G0 -Wall -I$PS2SDK/ee/include -I$PS2SDK/common/include -I. main.cpp -o terraria.elf -L$PS2SDK/ee/lib -ldraw -lgraph -lmath -lkernel -lstdc++ -fno-exceptions -fno-rtti
+          # Entramos a la carpeta de tu proyecto (si es necesario)
+          # Y ejecutamos el compilador. Aquí un ejemplo manual básico:
+          ee-g++ -o Terracraft.elf main.cpp -L$PS2SDK/ee/lib -lgraph -ldraw -lkernel -I$PS2SDK/ee/include -I$PS2SDK/common/include
 
-      - name: Subir Resultado
+      - name: Guardar el Juego (.elf)
         uses: actions/upload-artifact@v4
         with:
-          name: Juego-Terraria-PS2
-          path: terraria.elf
-          
+          name: Terracraft-PS2-Build
+          path: Terracraft.elf
           
